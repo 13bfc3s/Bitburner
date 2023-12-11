@@ -2,26 +2,28 @@
 export async function main(ns) {
     let depth = ns.args[0] || 10; // Set depth, default is 10 if not provided
     let allServers = scanAndAnalyze(ns, "home", depth);
-
+    let playerHackingSkill = ns.getHackingLevel();
     let serversInfo = [];
 
     // Iterate through each server to get its information
     for (let server of allServers) {
-        let currentMoney = ns.getServerMoneyAvailable(server);
-				let maxMoney = ns.getServerMaxMoney(server);
-        let hackTime = ns.getHackTime(server);
-        let growTime = ns.getGrowTime(server);
-        let weakenTime = ns.getWeakenTime(server);
-        let avgTime = (hackTime + growTime + weakenTime) / 3;
-        let hackPerSecond = maxMoney / hackTime;
-        if (maxMoney > 0) {
-            serversInfo.push({ 
-                name: server, 
-								currentMoney: currentMoney,
-                maxMoney: maxMoney, 
-                hackPerSecond: hackPerSecond,
-                avgTime: avgTime 
-            });
+        if (ns.getServerRequiredHackingLevel(server) <= playerHackingSkill) {
+            let currentMoney = ns.getServerMoneyAvailable(server);
+            let maxMoney = ns.getServerMaxMoney(server);
+            let hackTime = ns.getHackTime(server);
+            let growTime = ns.getGrowTime(server);
+            let weakenTime = ns.getWeakenTime(server);
+            let avgTime = (hackTime + growTime + weakenTime) / 3;
+            let hackPerSecond = maxMoney / hackTime;
+            if (maxMoney > 0) {
+                serversInfo.push({ 
+                    name: server, 
+                    currentMoney: currentMoney,
+                    maxMoney: maxMoney, 
+                    hackPerSecond: hackPerSecond,
+                    avgTime: avgTime 
+                });
+            }
         }
     }
 
