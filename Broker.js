@@ -2,25 +2,29 @@
 export async function main(ns) {
     const stockSymbols = ns.stock.getSymbols();
     let ownedStocks = {};
-    const maxStocksToManage = 5;
+    let maxStocksToManage = 5; // Initial value
 
     while (true) {
+        let availableFunds = ns.getServerMoneyAvailable('home');
+        let activeInvestments = Object.keys(ownedStocks).length;
+        let fundsPerInvestment = availableFunds / (maxStocksToManage - activeInvestments);
+
         for (let symbol of stockSymbols) {
             let forecast = ns.stock.getForecast(symbol);
             let [sharesOwned, avgPrice, , sharesShort] = ns.stock.getPosition(symbol);
             let stockPrice = ns.stock.getPrice(symbol);
-            let availableFunds = ns.getServerMoneyAvailable('home');
+            let maxShares = ns.stock.getMaxShares(symbol);
 
-						// Buy stocks with weakly increasing forecast
-						if (forecast > 0.6 && !sharesOwned && !sharesShort && Object.keys(ownedStocks).length < maxStocksToManage) {
-							let sharesToBuy = Math.floor((availableFunds * 0.20) / stockPrice);
-							if (sharesToBuy > 0) {
-								ns.stock.buyStock(symbol, sharesToBuy);
-								ownedStocks[symbol] = { price: stockPrice, shares: sharesToBuy };
-								let totalCost = sharesToBuy * stockPrice;
-								ns.tprint(`Bought ${sharesToBuy} shares of ${symbol} at $${stockPrice.toFixed(2)} for ${formatNumber(totalCost)}`);
-							}
-						}
+            // Adjust maxStocksToManage based on funds and stock prices
+            if (activeInvestments < maxStocksToManage && forecast > 0.6 && !sharesOwned && !sharesShort) {
+                let sharesToBuy = Math.min(Math.floor(fundsPerInvestment / stockPrice), maxShares);
+                if (sharesToBuy > 0) {
+                    ns.stock.buyStock(symbol, sharesToBuy);
+                    ownedStocks[symbol] = { price: stockPrice, shares: sharesToBuy };
+                    let totalCost = sharesToBuy * stockPrice;
+                    ns.tprint(`Bought ${sharesToBuy} shares of ${symbol} at $${stockPrice.toFixed(2)} for ${formatNumber(totalCost)}`);
+                }
+            }
 
             // Sell stocks when 10% gain or loss is reached or forecast drops below 0.5
             if (sharesOwned > 0) {
@@ -36,7 +40,7 @@ export async function main(ns) {
             }
         }
 
-        await ns.sleep(1000); // Check every second
+        await ns.sleep(10000); // Check every 10 second
     }
 }
 
@@ -46,7 +50,9 @@ function formatNumber(num) {
     num = Math.abs(num);
 
     let formattedNumber = '';
-    if (num >= 1e9) {
+		if (num >= 1e12) {
+        formattedNumber = (num / 1e12).toFixed(3) + ' t';
+    } else if (num >= 1e9) {
         formattedNumber = (num / 1e9).toFixed(3) + ' B';
     } else if (num >= 1e6) {
         formattedNumber = (num / 1e6).toFixed(3) + ' M';
