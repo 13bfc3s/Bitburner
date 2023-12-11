@@ -37,7 +37,7 @@ export async function main(ns) {
                 if (threads > 0) {
                     ns.scp("Hack_Template.script", server);
                     ns.exec("Hack_Template.script", server, threads);
-										await ns.sleep(1000); // Wait for 1 minute
+										await ns.sleep(1000); // Wait for 1 second
                 }
             }
         }
